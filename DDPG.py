@@ -24,7 +24,7 @@ class OUActionNoise(object): # Noise
     def reset(self):
         self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
 
-class ReplayBuffer(object):
+class ReplayBuffer(object): # Buffer/Replay Memory
     def __init__(self, max_size, input_shape, n_actions):
         self.mem_size = max_size
         self.mem_cntr = 0
