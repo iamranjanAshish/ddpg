@@ -7,7 +7,7 @@ from math import sqrt
 rng = np.random.default_rng()
 tf.compat.v1.disable_eager_execution()
 
-class OUActionNoise(object): # Noise - I think its there for the part of uncertainity
+class OUActionNoise(object): # Noise
     def __init__(self, mu, sigma=0.15, theta=0.2, dt=1e-2, x0=None):
         self.theta = theta
         self.mu = mu
@@ -84,12 +84,12 @@ class Actor(object):
             apply_gradients(zip(self.actor_gradients, self.params))
 
     def build_network(self):
-        with tf.compat.v1.variable_scope(self.name): # 4 NN's are there man, it's actually very necessary
+        with tf.compat.v1.variable_scope(self.name): 
             self.input = tf.compat.v1.placeholder(tf.float32, 
-                shape = (None, *self.input_dims), # *we'll look into this
+                shape = (None, *self.input_dims), 
                 name = 'input')
             self.action_value_gradient = tf.compat.v1.placeholder(tf.float32, 
-                shape = [None, self.n_actions]) # will be calculated during the learn function of agent
+                shape = [None, self.n_actions])
 
             f1 = 1/sqrt(self.fc1_dims)
             dense1 = tf.compat.v1.layers.dense(self.input, units=self.fc1_dims,
@@ -109,19 +109,18 @@ class Actor(object):
             mu = tf.compat.v1.layers.dense(layer2_activation, units = self.n_actions, activation='tanh',
                 kernel_initializer = random_uniform(-f3, f3), 
                 bias_initializer = random_uniform(-f3, f3))
-            self.mu = tf.compat.v1.multiply(mu, self.action_bound) # action_bound - +ve
+            self.mu = tf.compat.v1.multiply(mu, self.action_bound)
 
     def predict(self, inputs):
         return self.sess.run(self.mu, feed_dict={self.input : inputs})
 
-    def train(self, inputs, gradients): # actual backpropagation step -- ***Review Tensorflow
+    def train(self, inputs, gradients):
         self.sess.run(self.optimize, feed_dict={self.input : inputs, 
             self.action_value_gradient : gradients})
 
     def save_checkpoint(self):
         print('...saving model...')
-        self.saver.save(self.sess, self.checkpoint_file) 
-        # we actually save the whole session in 'pure' tensorflow.
+        self.saver.save(self.sess, self.checkpoint_file)
 
     def load_checkpoint(self):
         print('....loading model....')
@@ -197,8 +196,7 @@ class Critic(object):
 
     def save_checkpoint(self):
         print('...saving model...')
-        self.saver.save(self.sess, self.checkpoint_file) 
-        # we actually save the whole session in 'pure' tensorflow.
+        self.saver.save(self.sess, self.checkpoint_file)
 
     def load_checkpoint(self):
         print('....loading model....')
@@ -250,12 +248,12 @@ class Agent(object):
         self.memory.store_transition(state, action, reward, new_state, done)
 
     def choose_action(self, state):
-        state = state[np.newaxis, :] # np.newaxis == none, placeholder tf.float32,for batch size
+        state = state[np.newaxis, :]
         mu = self.actor.predict(state)
         noise = self.noise()
         mu_prime = mu + noise
 
-        return mu_prime[0] # action will be returned as a tensor of single value, scaler tensor...hence
+        return mu_prime[0]
 
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
@@ -268,15 +266,13 @@ class Agent(object):
             target = []
             for i in range(self.batch_size):
                 target.append(reward[i] + self.gamma*critic_value_[i]*done[i])
-            
-            # target = np.reshape(target, (self.batch_size,1))
 
             target = np.reshape(target, (self.batch_size, 1))
 
             _ = self.critic.train(state, action, target)
 
-            # target policy - deterministic
-            # main policy - stochastic
+            # Target Policy - Deterministic
+            # Main Policy - Stochastic
 
             a_outs = self.actor.predict(state)
 
